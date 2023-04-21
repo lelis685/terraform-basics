@@ -46,12 +46,10 @@ resource "aws_internet_gateway" "myapp-igw" {
   }
 }
 
-
 resource "aws_route_table_association" "myapp-rtb-subnet" {
   subnet_id      = aws_subnet.myapp-subnet-1.id
   route_table_id = aws_route_table.myapp-route-table.id
 }
-
 
 resource "aws_security_group" "myapp-sg" {
   name   = "myapp-sg"
@@ -80,6 +78,39 @@ resource "aws_security_group" "myapp-sg" {
 
   tags = {
     Name = "${var.env_prefix}-sg"
+  }
+
+}
+
+data "aws_ami" "latest-amazon-linux-image" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-kernel-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+}
+
+resource "aws_instance" "myapp-server" {
+  ami           = data.aws_ami.latest-amazon-linux-image.id
+  instance_type = "t2.micro"
+
+  subnet_id              = aws_subnet.myapp-subnet-1.id
+  vpc_security_group_ids = [aws_security_group.myapp-sg.id]
+  availability_zone      = var.availability_zone
+
+  associate_public_ip_address = true
+  key_name                    = "test-kp"
+
+  tags = {
+    Name = "${var.env_prefix}-server"
   }
 
 }
